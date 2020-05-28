@@ -43,8 +43,8 @@ char get_file_type(__u16 i_mode) {
     return '?';
 }
 
-void log_time(__u32 i_time) {
-
+char* log_time(__u32 i_time) {
+    
 }
 
 void log_superblock() {
