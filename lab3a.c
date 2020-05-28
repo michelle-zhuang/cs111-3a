@@ -111,8 +111,8 @@ void log_allocated_inode(int inode_num) {
         error_msg("pread failure.", 2);
     }
     
-    uint16_t imode = inode.i_mode;
-    uint16_t link_count = inode.i_links_count;
+    uint16_t imode = inode.i_mode, link_count = inode.i_links_count;
+    uint32_t file_size = inode.i_size;
     char ctime[24], mtime[24], atime[24];
     get_time(inode.i_ctime, ctime);
     get_time(inode.i_mtime, mtime);
@@ -123,7 +123,8 @@ void log_allocated_inode(int inode_num) {
     
     char file_type = get_file_type(imode & 0xF000);
     
-    printf("INODE,%d,%c,%o,%d,%d,%d,%s,%s,%s,%d,%d\n",
+    //print first 12 entries
+    printf("INODE,%d,%c,%o,%d,%d,%d,%s,%s,%s,%d,%d",
            inode_num,
            file_type,
            imode & 0xFFF,
@@ -131,8 +132,16 @@ void log_allocated_inode(int inode_num) {
            inode.i_gid,
            link_count,
            ctime,mtime,atime,
-           inode.i_size,
+           file_size,
            inode.i_blocks);
+    
+    //print the 15 block addresses
+    if (!(file_type == 's' && file_size <= 60)){
+        for (int i = 0; i < 15; i++){
+            printf(",%d",inode.i_block[i]);
+        }
+    }
+    printf("\n");
     
 }
 
