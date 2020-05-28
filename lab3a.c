@@ -11,13 +11,14 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <time.h>
+#include <stdint.h>
 #include "ext2_fs.h"
 
 /* -----Global variables----- */
 
 #define SUPERBLOCK_OFFSET 1024
 int img_fd;
-int block_size, block_count, inode_count;
+int block_size, block_count, inode_count, inode_table;
 struct ext2_super_block superblock;
 struct ext2_group_desc group;
 
@@ -29,7 +30,7 @@ void error_msg(char* message, int exit_code) {
     exit(exit_code);
 }
 
-char get_filetype(__u16 i_mode) {
+char get_file_type(uint16_t i_mode) {
     if (i_mode == 0xA000) {
         return 's';
     }
@@ -43,13 +44,8 @@ char get_filetype(__u16 i_mode) {
     return '?';
 }
 
-char* get_time(__u32 i_time) {
-    char output[64];
-    time_t rawtime = i_time;
-    struct tm time = gmtime(&rawtime);
-    strftime(output, 64, "%m/%d/%y %H:%M:%S", &time);
-
-    return output;
+void get_time(uint32_t i_time) {
+    
 }
 
 void log_superblock() {
@@ -96,17 +92,29 @@ void log_free_block(int block){
                 printf("BFREE,%d\n",block_num);
             }
             block_num++;
-            
-            if (block_num > block_count){
-                break;
-            }
+        }
+        if (block_num > block_count){
+            break;
         }
     }
     free(buf);
 }
 
-void log_allocated_inode() {
+void log_allocated_inode(int inode_num) {
     struct ext2_inode inode;
+    
+    long offset = find_offset(inode_table) + (inode_num - 1) * sizeof(inode);
+    pread(img_fd, &inode, sizeof(inode), offset);
+    
+    uint16_t imode = inode.i_mode;
+    uint16_t link_count = inode.i_links_count;
+    
+    if (imode == 0 || link_count == 0)
+        return;
+    
+    char file_type = get_file_type(imode & 0xF000);
+    
+    printf("INODE,%d,%c,%o,%d,%d,%d\n",inode_num,file_type,imode & 0xFFF,inode.i_uid,inode.i_gid,link_count);
     
 }
 
@@ -128,13 +136,12 @@ void log_free_inode(int block){
                 printf("IFREE,%d\n",inode_num);
             }
             else{
-                log_allocated_inode();
+                log_allocated_inode(inode_num);
             }
             inode_num++;
-            
-            if (inode_num > inode_count){
-                break;
-            }
+        }
+        if (inode_num > inode_count){
+            break;
         }
     }
     free(buf);
@@ -149,6 +156,7 @@ void log_group() {
     int group_num = 0;
     int block_bitmap = group.bg_block_bitmap;
     int inode_bitmap = group.bg_inode_bitmap;
+    inode_table = group.bg_inode_table;
     
     printf("GROUP,%d,%d,%d,%d,%d,%d,%d,%d\n",
            group_num,
@@ -158,7 +166,7 @@ void log_group() {
            group.bg_free_inodes_count,
            block_bitmap,
            inode_bitmap,
-           group.bg_inode_table);
+           inode_table);
     
     log_free_block(block_bitmap);
     log_free_inode(inode_bitmap);
