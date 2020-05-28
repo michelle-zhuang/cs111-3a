@@ -44,7 +44,7 @@ char get_file_type(uint16_t i_mode) {
     return '?';
 }
 
-void log_time(uint32_t i_time) {
+void get_time(uint32_t i_time) {
     
 }
 
@@ -107,13 +107,14 @@ void log_allocated_inode(int inode_num) {
     pread(img_fd, &inode, sizeof(inode), offset);
     
     uint16_t imode = inode.i_mode;
+    uint16_t link_count = inode.i_links_count;
     
-    if (imode == 0 || inode.i_links_count == 0)
+    if (imode == 0 || link_count == 0)
         return;
     
     char file_type = get_file_type(imode & 0xF000);
     
-    printf("INODE,%d,%c,\n",inode_num,file_type);
+    printf("INODE,%d,%c,%o,%d,%d,%d\n",inode_num,file_type,imode & 0xFFF,inode.i_uid,inode.i_gid,link_count);
     
 }
 
