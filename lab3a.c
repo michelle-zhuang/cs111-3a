@@ -29,7 +29,7 @@ void error_msg(char* message, int exit_code) {
     exit(exit_code);
 }
 
-char get_file_type(__u16 i_mode) {
+char get_filetype(__u16 i_mode) {
     if (i_mode == 0xA000) {
         return 's';
     }
@@ -43,7 +43,7 @@ char get_file_type(__u16 i_mode) {
     return '?';
 }
 
-char* log_time(__u32 i_time) {
+char* get_time(__u32 i_time) {
     char output[64];
     time_t rawtime = i_time;
     struct tm time = gmtime(&rawtime);
