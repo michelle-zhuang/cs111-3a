@@ -103,7 +103,7 @@ void log_free_block(int block){
 void log_allocated_inode(int inode_num) {
     struct ext2_inode inode;
     
-    long offset = find_offset(inode_table) + (inode_num - 1);
+    long offset = find_offset(inode_table) + (inode_num - 1) * sizeof(inode);
     pread(img_fd, &inode, sizeof(inode), offset);
     
     printf("INODE,%d\n",inode_num);
