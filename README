@@ -1,0 +1,14 @@
+NAME: Miles Kang
+EMAIL: milesjkang@gmail.com
+ID: 405106565
+
+Project 3a
+
+The included files are:
+
+1. lab3a.c: The C source code for the program.
+
+2. Makefile: Supports (default), check, clean, and dist.
+   a. default: builds the executable.
+   b. clean:   deletes all files created by Makefile.
+   c. dist:    builds the distribution tarball.
