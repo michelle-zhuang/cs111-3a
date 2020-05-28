@@ -44,8 +44,10 @@ char get_file_type(uint16_t i_mode) {
     return '?';
 }
 
-void get_time(uint32_t i_time) {
-    
+void get_time(uint32_t i_time, char* string) {
+    time_t rawtime = i_time;
+    struct tm* info = gmtime(&rawtime);
+    strftime(string, 24, "%m/%d/%y %H:%M:%S", info);
 }
 
 void log_superblock() {
@@ -104,17 +106,33 @@ void log_allocated_inode(int inode_num) {
     struct ext2_inode inode;
     
     long offset = find_offset(inode_table) + (inode_num - 1) * sizeof(inode);
-    pread(img_fd, &inode, sizeof(inode), offset);
+    
+    if (pread(img_fd, &inode, sizeof(inode), offset) < 0){
+        error_msg("pread failure.", 2);
+    }
     
     uint16_t imode = inode.i_mode;
     uint16_t link_count = inode.i_links_count;
+    char ctime[24], mtime[24], atime[24];
+    get_time(inode.i_ctime, ctime);
+    get_time(inode.i_mtime, mtime);
+    get_time(inode.i_atime, atime);
     
     if (imode == 0 || link_count == 0)
         return;
     
     char file_type = get_file_type(imode & 0xF000);
     
-    printf("INODE,%d,%c,%o,%d,%d,%d\n",inode_num,file_type,imode & 0xFFF,inode.i_uid,inode.i_gid,link_count);
+    printf("INODE,%d,%c,%o,%d,%d,%d,%s,%s,%s,%d,%d\n",
+           inode_num,
+           file_type,
+           imode & 0xFFF,
+           inode.i_uid,
+           inode.i_gid,
+           link_count,
+           ctime,mtime,atime,
+           inode.i_size,
+           inode.i_blocks);
     
 }
 
