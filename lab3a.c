@@ -11,7 +11,6 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <time.h>
-#include <stdint.h>
 #include "ext2_fs.h"
 
 /* -----Global variables----- */
@@ -30,22 +29,22 @@ void error_msg(char* message, int exit_code) {
     exit(exit_code);
 }
 
-char get_file_type(int16_t i_mode) {
-    if (i_mode == S_IFLNK) {
+char get_file_type(__u16 i_mode) {
+    if (i_mode == 0xA000) {
         return 's';
     }
-    else if (i_mode == S_IFDIR) {
+    else if (i_mode == 0x4000) {
         return 'd';
     }
-    else if (i_mode == S_IFREG) {
+    else if (i_mode == 0x8000) {
         return 'f';
     }
     // if none of the above
     return '?';
 }
 
-void log_time(int32_t i_time) {
-    
+void log_time(__u32 i_time) {
+
 }
 
 void log_superblock() {
