@@ -44,7 +44,12 @@ char get_file_type(__u16 i_mode) {
 }
 
 char* log_time(__u32 i_time) {
-    
+    char output[64];
+    time_t rawtime = i_time;
+    struct tm time = gmtime(&rawtime);
+    strftime(output, 64, "%m/%d/%y %H:%M:%S", &time);
+
+    return output;
 }
 
 void log_superblock() {
@@ -76,7 +81,7 @@ long find_offset(int block_num){
 void log_free_block(int block){
     char* buf = (char*)malloc(block_size);
     long offset = find_offset(block);
-    int block_num = superblock.s_first_data_block;
+    int block_num = 1;
     
     if (pread(img_fd, buf, block_size, offset) < 0){
         error_msg("pread failure.", 2);
@@ -91,21 +96,48 @@ void log_free_block(int block){
                 printf("BFREE,%d\n",block_num);
             }
             block_num++;
+            
+            if (block_num > block_count){
+                break;
+            }
         }
     }
-    
     free(buf);
-}
-
-void log_free_inode(int block){
-    long offset = find_offset(block);
-    int block_num = superblock.s_first_ino;
-    
 }
 
 void log_allocated_inode() {
     struct ext2_inode inode;
+    
+}
 
+void log_free_inode(int block){
+    char* buf = (char*)malloc(block_size);
+    long offset = find_offset(block);
+    int inode_num = 1;
+    
+    if (pread(img_fd, buf, block_size, offset) < 0){
+        error_msg("pread failure.", 2);
+    }
+    
+    for(int i = 0; i < block_size; i++){
+        char byte = buf[i];
+        for(int j = 0; j < 8; j++){
+            int mask = 1 << j;
+            int read = byte & mask;
+            if (!read){
+                printf("IFREE,%d\n",inode_num);
+            }
+            else{
+                log_allocated_inode();
+            }
+            inode_num++;
+            
+            if (inode_num > inode_count){
+                break;
+            }
+        }
+    }
+    free(buf);
 }
 
 void log_group() {
@@ -132,10 +164,6 @@ void log_group() {
     log_free_inode(inode_bitmap);
 }
 
-void produce_summary() {
-    // Final output.
-}
-
 int main(int argc, char* argv[]) {
     // Check for bad arguments, then open file.
     if (argc != 2) {
@@ -148,7 +176,6 @@ int main(int argc, char* argv[]) {
     
     log_superblock();
     log_group();
-    produce_summary();
     
     exit(0);
 }
