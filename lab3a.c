@@ -10,6 +10,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+#include <time.h>
+#include <stdint.h>
 #include "ext2_fs.h"
 
 /* -----Global variables----- */
@@ -26,6 +28,24 @@ void error_msg(char* message, int exit_code) {
     // Generic error msg.
     fprintf(stderr, "Error %d: %s\n", errno, message);
     exit(exit_code);
+}
+
+char get_file_type(int16_t i_mode) {
+    if (i_mode == S_IFLNK) {
+        return 's';
+    }
+    else if (i_mode == S_IFDIR) {
+        return 'd';
+    }
+    else if (i_mode == S_IFREG) {
+        return 'f';
+    }
+    // if none of the above
+    return '?';
+}
+
+void log_time(int32_t i_time) {
+    
 }
 
 void log_superblock() {
@@ -82,6 +102,11 @@ void log_free_inode(int block){
     long offset = find_offset(block);
     int block_num = superblock.s_first_ino;
     
+}
+
+void log_allocated_inode() {
+    struct ext2_inode inode;
+
 }
 
 void log_group() {
