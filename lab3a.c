@@ -16,13 +16,11 @@
 
 /* -----Global variables----- */
 
-int grade = 100;
-char michelle[100] = "at feast and not contributing";
-
 #define SUPERBLOCK_OFFSET 1024
 int img_fd;
 int block_size;
 struct ext2_super_block superblock;
+struct ext2_group_desc group;
 
 
 /* -----Global variables----- */
@@ -43,13 +41,31 @@ void log_superblock() {
     block_size = EXT2_MIN_BLOCK_SIZE << superblock.s_log_block_size;
     
     printf("SUPERBLOCK,%d,%d,%d,%d,%d,%d,%d\n",
-           superblock.s_blocks_count,
-           superblock.s_inodes_count,
-           block_size,
-           superblock.s_inode_size,
-           superblock.s_blocks_per_group,
-           superblock.s_inodes_per_group,
-           superblock.s_first_ino);
+        superblock.s_blocks_count,
+        superblock.s_inodes_count,
+        block_size,
+        superblock.s_inode_size,
+        superblock.s_blocks_per_group,
+        superblock.s_inodes_per_group,
+        superblock.s_first_ino);
+}
+
+void log_group() {
+	// Parses information from the group.
+    int n_groups = 1;
+    if (pread(img_fd, &group, sizeof(group), SUPERBLOCK_OFFSET + sizeof(superblock)) < 0){
+        error_msg("pread failure.", 2);
+    }
+    
+    printf("GROUP,%d,%d,%d,%d,%d,%d,%d,%d\n",
+        n_groups,
+        superblock.s_blocks_count,
+        superblock.s_inodes_count,
+        group.bg_free_blocks_count,
+        group.bg_free_inodes_count,
+        group.bg_block_bitmap,
+        group.bg_inode_bitmap,
+        group.bg_inode_table);
 }
 
 
@@ -69,6 +85,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	log_superblock();
+    log_group();
 	produce_summary();
 
     exit(0);
