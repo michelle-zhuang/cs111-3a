@@ -1,6 +1,6 @@
-// NAME: Miles Kang
-// EMAIL: milesjkang@gmail.com
-// ID: 405106565
+// NAME: Miles Kang,Michelle Zhuang
+// EMAIL: milesjkang@gmail.com,michelle.zhuang@g.ucla.edu
+// ID: 405106565,505143435
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +9,8 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/uio.h>
 #include "ext2_fs.h"
 
 
@@ -17,9 +19,11 @@
 int grade = 100;
 char michelle[100] = "at feast and not contributing";
 
+#define SUPERBLOCK_OFFSET 1024
 int img_fd;
 int block_size;
 struct ext2_super_block superblock;
+
 
 /* -----Global variables----- */
 
@@ -31,8 +35,21 @@ void error_msg(char* message, int exit_code) {
 }
 
 
-void parse_image() {
-	// We should have helper functions here.
+void log_superblock() {
+	// Parses information from the superblock.
+    if (pread(img_fd, &superblock, sizeof(superblock), SUPERBLOCK_OFFSET) < 0){
+        error_msg("pread failure.", 2);
+    }
+    block_size = EXT2_MIN_BLOCK_SIZE << superblock.s_log_block_size;
+    
+    printf("SUPERBLOCK,%d,%d,%d,%d,%d,%d,%d\n",
+           superblock.s_blocks_count,
+           superblock.s_inodes_count,
+           block_size,
+           superblock.s_inode_size,
+           superblock.s_blocks_per_group,
+           superblock.s_inodes_per_group,
+           superblock.s_first_ino);
 }
 
 
@@ -51,9 +68,7 @@ int main(int argc, char* argv[]) {
 		error_msg("Could not open img file.", 1);
 	}
 
-	block_size = EXT2_MIN_BLOCK_SIZE << superblock.s_log_block_size;
-
-	parse_image();
+	log_superblock();
 	produce_summary();
 
     exit(0);
