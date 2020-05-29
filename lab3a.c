@@ -21,7 +21,6 @@ int img_fd;
 int block_size, block_count, inode_count, inode_table;
 struct ext2_super_block superblock;
 struct ext2_group_desc group;
-long logical_block_offset = 0;
 
 /* -----Global variables----- */
 
@@ -99,12 +98,14 @@ void log_directory_entry(int parent_inode, int block_num){
     }
 }
 
-void log_single_indirect_block(uint32_t inode, uint32_t block,
+long log_single_indirect_block(uint32_t inode, uint32_t block,
         uint32_t curr_block, int block_index, int ptr_index, char filetype) {
 
     if (curr_block == 0) {
-        return;
+        return 0;
     }
+
+    long logical_block_offset = 0;
     
     if (filetype == 'd') {
         log_directory_entry(inode, curr_block);
@@ -131,9 +132,11 @@ void log_single_indirect_block(uint32_t inode, uint32_t block,
         block,
         curr_block
     );
+
+    return logical_block_offset;
 }
 
-void log_indirect_block(uint32_t inode, uint32_t block,
+long log_indirect_block(uint32_t inode, uint32_t block,
         int block_index, int level, char filetype) {
 
     int num_ptrs = block_size / 4;
@@ -148,30 +151,48 @@ void log_indirect_block(uint32_t inode, uint32_t block,
     // Base case: log indirect blocks.
 
     if (level == 1) {
+        long tmp_logical_offset = 0;
+        int offset_flag = 0;
+        
         for (int i = 0; i < num_ptrs; i++) {
-            log_single_indirect_block(inode, block, new_block[i], block_index, i, filetype);
+            long tmp = log_single_indirect_block(inode, block, new_block[i], block_index, i, filetype);
+            if (tmp > 0 && !offset_flag) {
+                tmp_logical_offset = tmp - i;
+                offset_flag = 1;
+            }
         }
+        return tmp_logical_offset;
     }
 
     // Recursively call one level down for each pointer in block.
 
     if (level > 1) {
+        long logical_block_offset;
+        int nonempty_flag = 0;
         for (int i = 0; i < num_ptrs; i++) {
-            log_indirect_block(inode, new_block[i], block_index, level - 1, filetype);
+            if (new_block[i] == 0) {
+                continue;
+            }
+            logical_block_offset = log_indirect_block(inode, new_block[i], block_index, level - 1, filetype);
+            nonempty_flag = 1;
         }
 
         // PRINT.
 
-        if (block_index - 11 != level) {
+        if (nonempty_flag) {
             printf("INDIRECT,%d,%d,%ld,%d,%d\n",
                 inode,
-                level + 1,
+                level,
                 logical_block_offset,
                 block,
                 new_block[0]
             );
         }
+        
+        return logical_block_offset;
     }
+
+    return 0;
 }
 
 
