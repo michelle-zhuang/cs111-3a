@@ -98,6 +98,72 @@ void log_directory_entry(int parent_inode, int block_num){
     }
 }
 
+long log_indirect_block(uint32_t inode, uint32_t block, uint32_t* curr_block,
+        int block_index, int ptr_index, int level, char filetype) {
+
+    if (*curr_block == 0) {
+        return 0;
+    }
+
+    printf("sup\n");
+
+    // Base case: log indirect blocks.
+
+    if (level == 0) {
+        if (filetype == 'd') {
+            log_directory_entry(inode, *curr_block);
+        }
+
+        int original_level = block_index - 11;
+        long logical_block_offset;
+
+        if (original_level == 1) {
+            logical_block_offset = block_index + ptr_index;
+        }
+        else if (original_level == 2) {
+            logical_block_offset = 256 + block_index + ptr_index;
+        }
+        else if (original_level == 3) {
+            logical_block_offset = 256 * 256 + block_index + ptr_index;
+        }
+
+        printf("INDIRECT,%d,%d,%ld,%d,%d\n",
+            inode,
+            original_level,
+            logical_block_offset,
+            block,
+            *curr_block
+        );
+        return logical_block_offset;
+    }
+
+    // Recursively call one level down for each pointer in block.
+
+    if (level > 0) {
+        int num_ptrs = block_size / 4;
+        long logical_block_offset;
+
+        logical_block_offset = log_indirect_block(inode, block, &curr_block[0], block_index, 0, level - 1, filetype);
+        for (int i = 1; i < num_ptrs; i++) {
+            log_indirect_block(inode, block, &curr_block[i], block_index, i, level - 1, filetype);
+        }
+
+        // PRINT.
+
+        printf("INDIRECT,%d,%d,%ld,%d,%d\n",
+            inode,
+            level,
+            logical_block_offset,
+            block,
+            *curr_block
+        );
+
+        return logical_block_offset;
+    }
+
+    return 0;
+}
+
 void log_free_block(int block){
     char* buf = (char*)malloc(block_size);
     long offset = find_offset(block);
@@ -178,7 +244,35 @@ void log_allocated_inode(int inode_num) {
             }
         }
     }
+
+    long offset_single = find_offset(inode.i_block[12]);
+    uint32_t* block_single = (uint32_t*) malloc(block_size);
+
+    if (pread(img_fd, block_single, block_size, offset_single) < 0) {
+        error_msg("pread failure.", 2);
+    }
+
+    long offset_double = find_offset(inode.i_block[13]);
+    uint32_t* block_double = (uint32_t*) malloc(block_size);
+
+    if (pread(img_fd, block_double, block_size, offset_double) < 0) {
+        error_msg("pread failure.", 2);
+    }
+
+    long offset_triple = find_offset(inode.i_block[14]);
+    uint32_t* block_triple = (uint32_t*) malloc(block_size);
+
+    if (pread(img_fd, block_triple, block_size, offset_triple) < 0) {
+        error_msg("pread failure.", 2);
+    }
     
+    log_indirect_block(inode_num, inode.i_block[12], block_single, 12, 0, 1, file_type);
+    // log_indirect_block(inode_num, inode.i_block[13], block_double, 13, 0, 2, file_type);
+    // log_indirect_block(inode_num, inode.i_block[14], block_triple, 14, 0, 3, file_type);
+
+    // free(block_single);
+    // free(block_double);
+    // free(block_triple);
 }
 
 void log_free_inode(int block){
