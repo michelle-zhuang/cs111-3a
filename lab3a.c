@@ -113,25 +113,28 @@ long log_indirect_block(uint32_t inode, uint32_t block, uint32_t* curr_block,
         }
 
         int original_level = block_index - 11;
-        long logical_block_offset;
+        long logical_block_offset = 0;
+
+        // evaluate logical block offset for current data block.
 
         if (original_level == 1) {
-            logical_block_offset = block_index + ptr_index;
-        }
-        else if (original_level == 2) {
-            logical_block_offset = 256 + block_index + ptr_index;
-        }
-        else if (original_level == 3) {
-            logical_block_offset = 256 * 256 + block_index + ptr_index;
-        }
+                logical_block_offset = 12 + ptr_index;
+            }
+            else if (original_level == 2) {
+                logical_block_offset = 256 + 12 + ptr_index;
+            }
+            else if (original_level == 3) {
+                logical_block_offset = 256 * 256 + 256 + 12 + ptr_index;
+            }
 
         printf("INDIRECT,%d,%d,%ld,%d,%d\n",
             inode,
-            original_level,
+            1,
             logical_block_offset,
             block,
             *curr_block
         );
+
         return logical_block_offset;
     }
 
@@ -148,19 +151,22 @@ long log_indirect_block(uint32_t inode, uint32_t block, uint32_t* curr_block,
 
         // PRINT.
 
-        printf("INDIRECT,%d,%d,%ld,%d,%d\n",
-            inode,
-            level,
-            logical_block_offset,
-            block,
-            *curr_block
-        );
+        if (block_index - 11 != level) {
+            printf("INDIRECT,%d,%d,%ld,%d,%d\n",
+                inode,
+                level + 1,
+                logical_block_offset,
+                block,
+                *curr_block
+            );
+        }
 
         return logical_block_offset;
     }
 
     return 0;
 }
+
 
 void log_free_block(int block){
     char* buf = (char*)malloc(block_size);
