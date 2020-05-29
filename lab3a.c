@@ -113,7 +113,7 @@ long log_indirect_block(uint32_t inode, uint32_t block, uint32_t* curr_block,
         }
 
         int original_level = block_index - 11;
-        long logical_block_offset;
+        long logical_block_offset = 0;
 
         if (original_level == 1) {
             logical_block_offset = block_index + ptr_index;
