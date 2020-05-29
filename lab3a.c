@@ -105,8 +105,6 @@ long log_indirect_block(uint32_t inode, uint32_t block, uint32_t* curr_block,
         return 0;
     }
 
-    printf("sup\n");
-
     // Base case: log indirect blocks.
 
     if (level == 0) {
@@ -267,12 +265,12 @@ void log_allocated_inode(int inode_num) {
     }
     
     log_indirect_block(inode_num, inode.i_block[12], block_single, 12, 0, 1, file_type);
-    // log_indirect_block(inode_num, inode.i_block[13], block_double, 13, 0, 2, file_type);
-    // log_indirect_block(inode_num, inode.i_block[14], block_triple, 14, 0, 3, file_type);
+    log_indirect_block(inode_num, inode.i_block[13], block_double, 13, 0, 2, file_type);
+    log_indirect_block(inode_num, inode.i_block[14], block_triple, 14, 0, 3, file_type);
 
-    // free(block_single);
-    // free(block_double);
-    // free(block_triple);
+    free(block_single);
+    free(block_double);
+    free(block_triple);
 }
 
 void log_free_inode(int block){
