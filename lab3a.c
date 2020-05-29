@@ -50,6 +50,10 @@ void get_time(uint32_t i_time, char* string) {
     strftime(string, 24, "%m/%d/%y %H:%M:%S", info);
 }
 
+long find_offset(int block_num){
+    return SUPERBLOCK_OFFSET + block_size*(block_num-1);
+}
+
 void log_superblock() {
     // Parses information from the superblock.
     if (pread(img_fd, &superblock, sizeof(superblock), SUPERBLOCK_OFFSET) < 0){
@@ -72,8 +76,26 @@ void log_superblock() {
            superblock.s_first_ino);
 }
 
-long find_offset(int block_num){
-    return SUPERBLOCK_OFFSET + block_size*(block_num-1);
+void log_directory_entry(int parent_inode, int block_num){
+    struct ext2_dir_entry dir;
+    long offset = find_offset(block_num);
+    int logical_offset = 0;
+    
+    while (logical_offset < block_size){
+        if (pread(img_fd, &dir, sizeof(dir), offset+logical_offset) < 0)
+            error_msg("pread failure.", 2);
+        if (dir.inode){
+            printf("DIRENT,%d,%d,%d,%d,%d,'%s'\n",
+                   parent_inode,
+                   logical_offset,
+                   dir.inode,
+                   dir.rec_len,
+                   dir.name_len,
+                   dir.name
+                   );
+        }
+        logical_offset += dir.rec_len;
+    }
 }
 
 void log_free_block(int block){
@@ -136,12 +158,26 @@ void log_allocated_inode(int inode_num) {
            inode.i_blocks);
     
     //print the 15 block addresses
+    //NOTE: indirect levels 1,2,3 are at block indices 12,13,14
     if (!(file_type == 's' && file_size <= 60)){
         for (int i = 0; i < 15; i++){
             printf(",%d",inode.i_block[i]);
         }
     }
     printf("\n");
+    
+    // don't need to trace indirect blocks for symbolic links
+    if (file_type == 's')
+        return;
+    
+    // print directory entries for up to 12 data blocks
+    if (file_type == 'd'){
+        for(int i = 0; i < 12; i++){
+            if (inode.i_block[i]){
+                log_directory_entry(inode_num, inode.i_block[i]);
+            }
+        }
+    }
     
 }
 
