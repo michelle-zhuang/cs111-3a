@@ -7,4 +7,4 @@ default:
 clean:
 	rm -f lab3a lab3a-405106565.tar.gz
 dist:
-	tar -czvf lab0-405106565.tar.gz lab3a.c Makefile README
+	tar -czvf lab3a-405106565.tar.gz lab3a.c Makefile README ext2_fs.h

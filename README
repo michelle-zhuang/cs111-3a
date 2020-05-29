@@ -13,4 +13,6 @@ The included files are:
    b. clean:   deletes all files created by Makefile.
    c. dist:    builds the distribution tarball.
 
-3. README: Description of all included files.
+3. ext2_fs.h: Header file for EXT2 structs and macros.
+
+4. README: Description of all included files.
