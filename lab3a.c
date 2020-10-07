@@ -1,6 +1,4 @@
 // NAME: Miles Kang,Michelle Zhuang
-// EMAIL: milesjkang@gmail.com,michelle.zhuang@g.ucla.edu
-// ID: 405106565,505143435
 
 #include <stdio.h>
 #include <stdlib.h>
