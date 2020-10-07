@@ -1,6 +1,4 @@
 # NAME: Miles Kang,Michelle Zhuang
-# EMAIL: milesjkang@gmail.com,michellezhuang@g.ucla.edu
-# ID: 405106565,505143435
 
 default:
 	gcc -Wall -Wextra -g -o lab3a lab3a.c
